@@ -15,7 +15,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("Результат конвертирования: %v", summ)
-
 }
 
 func convert(amount float64, from string, to string) (float64, error) {
