@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -81,6 +82,9 @@ func med(nums []int) float64 {
 	if len(nums) == 0 {
 		return 0
 	}
+
+	sort.Ints(nums)
+
 	if len(nums)%2 == 0 {
 		return float64(nums[len(nums)/2-1]+nums[len(nums)/2]) / 2.0
 	}
