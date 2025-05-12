@@ -1,28 +1,30 @@
 package main
 
-import "fmt"
-
-type arr = [4]int
+import (
+	"demo/password/account"
+	"demo/password/files"
+	"fmt"
+)
 
 func main() {
-	a := [4]int{1, 2, 3, 4}
-	revers(&a)
-	fmt.Println(a)
+	var login string = promtUser("Введите логин")
+	var password string = promtUser("Введите пароль")
+	var url string = promtUser("Введите URL")
 
-	var pointer *int
-
-	fmt.Println(*pointer)
-
-	var p *string // Это nil-указатель
-	if p == nil {
-		fmt.Println("Указатель равен nil")
+	account1, err := account.NewAccountWithTimeStamp(login, password, url)
+	if err != nil {
+		panic(err.Error())
 	}
-
+	files.WriteFile("Привет, мир!!!", "text.txt")
+	account1.OutputAccaunt()
 
 }
 
-func revers(a *arr) {
-	for i, j := 0, len(a)-1; i < j; i, j = i+1, j-1 {
-		(*a)[i], (*a)[j] = (*a)[j], (*a)[i]
-	}
+func promtUser(promt string) string {
+	var userData string
+	fmt.Printf("%v: ", promt)
+
+	fmt.Scanln(&userData)
+
+	return userData
 }
