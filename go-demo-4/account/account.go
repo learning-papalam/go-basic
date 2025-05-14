@@ -11,9 +11,11 @@ import (
 )
 
 type Account struct {
-	login    string
-	password string
-	url      string
+	Login     string    `json:"login"`
+	Password  string    `json:"password"`
+	Url       string    `json:"url"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updateAt"`
 }
 
 func (a *Account) generatePassword(n int) {
@@ -26,22 +28,16 @@ func (a *Account) generatePassword(n int) {
 
 	password := make([]rune, n)
 
-	for range n {
+	for i := range password {
 		number := rand.IntN(len(all_rune))
-		password = append(password, all_rune[number])
+		password[i] = all_rune[number]
 	}
 
-	a.password = string(password)
+	a.Password = string(password)
 
 }
 
-type AccountWithTimeStamp struct {
-	createAt time.Time
-	updateAt time.Time
-	Account
-}
-
-func NewAccountWithTimeStamp(login, password, urlString string) (*AccountWithTimeStamp, error) {
+func NewAccount(login, password, urlString string) (*Account, error) {
 	if login == "" {
 		return nil, errors.New("INVALID_LOGIN")
 	}
@@ -50,14 +46,12 @@ func NewAccountWithTimeStamp(login, password, urlString string) (*AccountWithTim
 		return nil, errors.New("INVALID_URL")
 	}
 
-	newAcc := &AccountWithTimeStamp{
-		createAt: time.Now(),
-		updateAt: time.Now(),
-		Account: Account{
-			login:    login,
-			password: password,
-			url:      urlString,
-		},
+	newAcc := &Account{
+		Login:     login,
+		Password:  password,
+		Url:       urlString,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if password == "" {
@@ -68,6 +62,8 @@ func NewAccountWithTimeStamp(login, password, urlString string) (*AccountWithTim
 
 }
 
-func (a *AccountWithTimeStamp) OutputAccaunt() {
-	color.Cyan(a.login)
+func (a *Account) OutputAccaunt() {
+	color.Cyan(a.Login)
+	color.Green(a.Password)
+	color.Green(a.Url)
 }
