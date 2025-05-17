@@ -3,6 +3,7 @@ package main
 import (
 	"demo/password/account"
 	"demo/password/files"
+	"demo/password/output"
 	"fmt"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 
 func main() {
 
-	vault := account.NewVault()
+	vault := account.NewVault(files.NewJsonDb("data.json"))
 
 Loop:
 	for {
@@ -52,29 +53,29 @@ func createMenu() *[]string {
 	}
 }
 
-func searchAccount(vault *account.Vault) {
+func searchAccount(vault *account.VaultWithDB) {
 	var url string = promtUser("Введите URL для поиска")
 
 	foundAcc := vault.FindAccountByURL(url)
 	if len(foundAcc) == 0 {
-		color.Red("Аккаунтов не найдено")
+		output.PrintError("Аккаунтов не найдено")
 	}
 	for _, account := range foundAcc {
 		account.OutputAccaunt()
 	}
 }
 
-func deleteAccount(vault *account.Vault) {
+func deleteAccount(vault *account.VaultWithDB) {
 	var url string = promtUser("Введите URL для удаления")
 	isDeleted := vault.DeleteAccountByURL(url)
 	if isDeleted {
 		color.Green("Удалено")
 		return
 	}
-	color.Red("Аккаунт не найден")
+	output.PrintError("Аккаунт не найден")
 }
 
-func createAccount(vault *account.Vault) {
+func createAccount(vault *account.VaultWithDB) {
 	var login string = promtUser("Введите логин")
 	var password string = promtUser("Введите пароль")
 	var url string = promtUser("Введите URL")
@@ -86,13 +87,6 @@ func createAccount(vault *account.Vault) {
 	myAccount.OutputAccaunt()
 
 	vault.AddAccount(myAccount)
-
-	data, err := vault.ToByte()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	files.WriteFile(data, "data.json")
 }
 
 func promtUser(promt string) string {

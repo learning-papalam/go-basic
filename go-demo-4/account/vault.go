@@ -1,25 +1,36 @@
 package account
 
 import (
-	"demo/password/files"
+	"demo/password/output"
 	"encoding/json"
 	"strings"
 	"time"
-
-	"github.com/fatih/color"
 )
+
+type Db interface {
+	Read() ([]byte, error)
+	Write([]byte)
+}
 
 type Vault struct {
 	Accounts  []Account `json:"accounts"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func NewVault() *Vault {
-	data, err := files.ReadFile("data.json")
+type VaultWithDB struct {
+	Vault
+	db Db
+}
+
+func NewVault(db Db) *VaultWithDB {
+	data, err := db.Read()
 	if err != nil {
-		return &Vault{
-			Accounts:  []Account{},
-			UpdatedAt: time.Now(),
+		return &VaultWithDB{
+			Vault: Vault{
+				Accounts:  []Account{},
+				UpdatedAt: time.Now(),
+			},
+			db: db,
 		}
 	}
 
@@ -27,9 +38,12 @@ func NewVault() *Vault {
 
 	err = json.Unmarshal(data, &vault)
 	if err != nil {
-		color.Red("Не удалось прочитать JSON")
+		output.PrintError("Не удалось прочитать JSON")
 	}
-	return &vault
+	return &VaultWithDB{
+		Vault: vault,
+		db:    db,
+	}
 }
 
 func (v *Vault) ToByte() ([]byte, error) {
@@ -37,12 +51,12 @@ func (v *Vault) ToByte() ([]byte, error) {
 	return data, err
 }
 
-func (v *Vault) AddAccount(a *Account) {
+func (v *VaultWithDB) AddAccount(a *Account) {
 	v.Accounts = append(v.Accounts, *a)
 	v.save()
 }
 
-func (v *Vault) FindAccountByURL(url string) []Account {
+func (v *VaultWithDB) FindAccountByURL(url string) []Account {
 	var foundAcc []Account
 	urlNormalazed := strings.ToLower(url)
 	for _, acc := range v.Accounts {
@@ -53,7 +67,7 @@ func (v *Vault) FindAccountByURL(url string) []Account {
 	return foundAcc
 }
 
-func (v *Vault) DeleteAccountByURL(url string) bool {
+func (v *VaultWithDB) DeleteAccountByURL(url string) bool {
 	isDeleted := false
 	urlNormalazed := strings.ToLower(url)
 	i := 0
@@ -72,12 +86,12 @@ func (v *Vault) DeleteAccountByURL(url string) bool {
 	return isDeleted
 }
 
-func (v *Vault) save() {
+func (v *VaultWithDB) save() {
 	v.UpdatedAt = time.Now()
 
-	data, err := v.ToByte()
+	data, err := v.Vault.ToByte()
 	if err != nil {
-		color.Red("Не удалось преобразовать JSON")
+		output.PrintError("Не удалось преобразовать JSON")
 	}
-	files.WriteFile(data, "data.json")
+	v.db.Write(data)
 }
