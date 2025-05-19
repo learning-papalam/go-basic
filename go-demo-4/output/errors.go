@@ -15,4 +15,10 @@ func PrintError(value any) {
 	default:
 		color.Red("Неизвестный тип ошибки")
 	}
+
+	// можно еще так
+	valueInt, ok := value.(int)
+	if ok {
+		color.Red("Код ошибки %d", valueInt)
+	}
 }
