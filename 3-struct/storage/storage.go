@@ -1,7 +1,11 @@
 package storage
 
-import "demo/json/bins"
+type Storage struct {
+	files []string
+}
 
-func SaveBin(b *bins.Bin) {
-
+func NewStorage() *Storage {
+	return &Storage{
+		files: []string{},
+	}
 }
