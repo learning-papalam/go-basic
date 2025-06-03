@@ -1,6 +1,7 @@
 package account
 
 import (
+	"demo/password/encrypter"
 	"demo/password/output"
 	"encoding/json"
 	"strings"
@@ -19,30 +20,41 @@ type Vault struct {
 
 type VaultWithDB struct {
 	Vault
-	db Db
+	db  Db
+	enc encrypter.Encrypter
 }
 
-func NewVault(db Db) *VaultWithDB {
-	data, err := db.Read()
+func NewVault(db Db, enc encrypter.Encrypter) *VaultWithDB {
+	cipherText, err := db.Read()
 	if err != nil {
 		return &VaultWithDB{
 			Vault: Vault{
 				Accounts:  []Account{},
 				UpdatedAt: time.Now(),
 			},
-			db: db,
+			db:  db,
+			enc: enc,
 		}
 	}
 
 	var vault Vault
-
+	data := enc.Decrypted(cipherText)
 	err = json.Unmarshal(data, &vault)
 	if err != nil {
 		output.PrintError("Не удалось прочитать JSON")
+		return &VaultWithDB{
+			Vault: Vault{
+				Accounts:  []Account{},
+				UpdatedAt: time.Now(),
+			},
+			db:  db,
+			enc: enc,
+		}
 	}
 	return &VaultWithDB{
 		Vault: vault,
 		db:    db,
+		enc:   enc,
 	}
 }
 
@@ -56,11 +68,11 @@ func (v *VaultWithDB) AddAccount(a *Account) {
 	v.save()
 }
 
-func (v *VaultWithDB) FindAccountByURL(url string) []Account {
+func (v *VaultWithDB) FindAccounts(str string, checker func(acc Account, str string) bool) []Account {
 	var foundAcc []Account
-	urlNormalazed := strings.ToLower(url)
 	for _, acc := range v.Accounts {
-		if strings.Contains(strings.ToLower(acc.Url), urlNormalazed) {
+		isMatched := checker(acc, str)
+		if isMatched {
 			foundAcc = append(foundAcc, acc)
 		}
 	}
@@ -93,5 +105,6 @@ func (v *VaultWithDB) save() {
 	if err != nil {
 		output.PrintError("Не удалось преобразовать JSON")
 	}
-	v.db.Write(data)
+	cipherText := v.enc.Encrypted(data)
+	v.db.Write(cipherText)
 }
