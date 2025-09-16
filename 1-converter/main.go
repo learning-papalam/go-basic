@@ -1,82 +1,111 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 )
 
+type currencyExchange map[string]map[string]float32
+type userData map[string]string
+
 func main() {
-	var sourceCur, targetCur string
-	sourceCur = getUserCurrency(sourceCur)
-	amount := getUserAmount()
-	targetCur = getUserCurrency(sourceCur)
-	summ, err := convert(amount, sourceCur, targetCur)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Результат конвертирования: %v", summ)
+	var base currencyExchange
+	var amount float32
+	userCurrency := userData{}
+
+	fabrica(&base)
+
+	getUserCurrence(&userCurrency, &base)
+	amount = getUserAmount()
+	getUserCurrence(&userCurrency, &base)
+	calculatedAmound := calculate(amount, &userCurrency, &base)
+
+	fmt.Printf("В результате Вы получите: %0.2f", calculatedAmound)
 }
 
-func convert(amount float64, from string, to string) (float64, error) {
-	const USDtoEUR float64 = 0.88
-	const USDtoRUB float64 = 83
-	const UERtoRUB float64 = USDtoRUB / USDtoEUR
+func fabrica(c *currencyExchange) {
+	const USDtoRUB float32 = 88
+	const USDtoUER float32 = 0.90
+	const UERtoRUB float32 = USDtoRUB / USDtoUER
 
-	switch {
-	case from == "USD" && to == "UER":
-		return amount * USDtoEUR, nil
-	case from == "USD" && to == "RUB":
-		return amount * USDtoRUB, nil
-	case from == "UER" && to == "USD":
-		return amount / USDtoEUR, nil
-	case from == "UER" && to == "RUB":
-		return amount * UERtoRUB, nil
-	case from == "RUB" && to == "UER":
-		return amount / UERtoRUB, nil
-	case from == "RUB" && to == "USD":
-		return amount / USDtoRUB, nil
-	default:
-		return 0, errors.New("Произошла исключительная ситуация")
+	*c = currencyExchange{
+		"USD": {
+			"RUB": USDtoRUB,
+			"EUR": USDtoUER,
+		},
+		"EUR": {
+			"RUB": UERtoRUB,
+			"USD": 1 / USDtoUER,
+		},
+		"RUB": {
+			"USD": 1 / USDtoRUB,
+			"EUR": 1 / UERtoRUB,
+		},
 	}
 }
 
-func getUserCurrency(currency string) string {
-	var userCurrency, msg string
-	for {
-		switch currency {
-		case "USD":
-			msg = fmt.Sprint("Введите валюту (UER, RUB):")
-		case "UER":
-			msg = fmt.Sprint("Введите валюту (USD, RUB):")
-		case "RUB":
-			msg = fmt.Sprint("Введите валюту (USD, UER):")
-		default:
-			msg = fmt.Sprint("Введите валюту (USD, UER, RUB):")
+func getUserCurrence(u *userData, b *currencyExchange) {
+	var inputCurrency string
+	avalibleCurrency := []string{}
+	isCorrecCurrency := false
+	if len(*u) == 0 {
+		for currency := range *b {
+			avalibleCurrency = append(avalibleCurrency, currency)
 		}
-
-		fmt.Print(msg)
-		fmt.Scan(&userCurrency)
-
-		if userCurrency == "USD" || userCurrency == "UER" || userCurrency == "RUB" {
-			if currency == userCurrency {
-				fmt.Println("Ошибка: валюта не может повторятся")
+	} else {
+		from := (*u)["from"]
+		for currency := range *b {
+			if from == currency {
 				continue
 			}
-			return userCurrency
+			avalibleCurrency = append(avalibleCurrency, currency)
 		}
-		fmt.Println("Ошибка: валюта не определена!")
+	}
+Loop:
+	for {
+		fmt.Printf("Выберите валюту %v: ", strings.Join(avalibleCurrency, ","))
+		fmt.Scan(&inputCurrency)
+
+		inputCurrency = strings.ToUpper(inputCurrency)
+		for currency := range *b {
+			if currency == inputCurrency {
+				isCorrecCurrency = true
+			}
+		}
+		if isCorrecCurrency {
+			if len(*u) == 0 {
+				(*u)["from"] = inputCurrency
+				break Loop
+			} else {
+				from := (*u)["from"]
+				if from == inputCurrency {
+					fmt.Println("Валюта не может совпадать!")
+					continue Loop
+				}
+				(*u)["to"] = inputCurrency
+				break Loop
+			}
+		}
+		fmt.Println("Вы ошиблись при вводе валюты!")
+
+	}
+
+}
+
+func getUserAmount() float32 {
+	var userAmount float32
+	for {
+		fmt.Print("Введите количество: ")
+		fmt.Scan(&userAmount)
+		if userAmount > 0 {
+			return userAmount
+		}
+		fmt.Println("Ошибка при вводе, попробуйте еще раз...")
 	}
 }
 
-func getUserAmount() float64 {
-	var amount float64
-	for {
-		fmt.Print("Введите сумму: ")
-		fmt.Scan(&amount)
-
-		if amount > 0 {
-			return amount
-		}
-		fmt.Println("Вы ввели неверное значение!")
-	}
+func calculate(amount float32, u *userData, b *currencyExchange) float32 {
+	var from string = (*u)["from"]
+	var to string = (*u)["to"]
+	return amount * (*b)[from][to]
 }
